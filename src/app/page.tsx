@@ -1,20 +1,27 @@
-import { auth as serverAuth } from "@/lib/auth"
-import { redirect } from "next/navigation"
-import { db } from "@/lib/db"
-import { project } from "@/db/schema"
-import { eq, desc } from "drizzle-orm"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Plus, Folder } from "lucide-react"
+import { auth as serverAuth } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { db } from "@/lib/db";
+import { project } from "@/db/schema";
+import { eq, desc } from "drizzle-orm";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Plus, Folder } from "lucide-react";
+import SignOutButton from "./signout-button";
 
 export default async function Home() {
   const session = await serverAuth.api.getSession({
-    headers: await import("next/headers").then(h => h.headers()),
-  })
+    headers: await import("next/headers").then((h) => h.headers()),
+  });
 
   if (!session?.user) {
-    redirect("/auth/signin")
+    redirect("/auth/signin");
   }
 
   const projects = await db.query.project.findMany({
@@ -27,12 +34,12 @@ export default async function Home() {
       },
     },
     orderBy: [desc(project.updatedAt)],
-  })
+  });
 
-  const projectsWithCount = projects.map(p => ({
+  const projectsWithCount = projects.map((p) => ({
     ...p,
     _count: { tasks: p.tasks.length },
-  }))
+  }));
 
   return (
     <main className="min-h-screen bg-zinc-50">
@@ -48,11 +55,7 @@ export default async function Home() {
             <span className="text-sm text-muted-foreground">
               {session.user.email}
             </span>
-            <form action="/api/auth/signout" method="POST">
-              <Button variant="outline" size="sm" type="submit">
-                Sign out
-              </Button>
-            </form>
+            <SignOutButton />
           </div>
         </div>
       </div>
@@ -102,9 +105,7 @@ export default async function Home() {
                   <CardContent>
                     <div className="flex items-center justify-between text-sm text-muted-foreground">
                       <span>{proj._count.tasks} tasks</span>
-                      <span>
-                        Updated {proj.updatedAt.toLocaleDateString()}
-                      </span>
+                      <span>Updated {proj.updatedAt.toLocaleDateString()}</span>
                     </div>
                   </CardContent>
                 </Card>
@@ -114,5 +115,5 @@ export default async function Home() {
         )}
       </div>
     </main>
-  )
+  );
 }

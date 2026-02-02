@@ -31,7 +31,7 @@ async function readWorkflowFile(filename: string): Promise<string> {
  */
 function replaceTemplateVariables(content: string, context: WorkflowContext): string {
   let result = content;
-  
+
   // Replace common template variables
   for (const [key, value] of Object.entries(context)) {
     if (value !== undefined) {
@@ -39,25 +39,24 @@ function replaceTemplateVariables(content: string, context: WorkflowContext): st
       result = result.replace(placeholder, String(value));
     }
   }
-  
+
   // Replace date placeholder
   const today = new Date().toISOString().split("T")[0];
   result = result.replace(/\[today\]|\{today\}/gi, today);
-  
+
   return result;
 }
 
 /**
  * Execute research workflow using the research.md prompt
  */
-export async function executeResearchWorkflow(
-  context: WorkflowContext
-): Promise<string> {
+export async function executeResearchWorkflow(context: WorkflowContext): Promise<string> {
   const workflowContent = await readWorkflowFile("research.md");
   const prompt = replaceTemplateVariables(workflowContent, context);
 
   const result = await generateTextFromPrompt(prompt, {
-    system: "You are a research assistant. Follow the workflow instructions carefully and provide detailed research findings.",
+    system:
+      "You are a research assistant. Follow the workflow instructions carefully and provide detailed research findings.",
     temperature: 0.7,
     maxTokens: 4000,
   });
@@ -68,14 +67,13 @@ export async function executeResearchWorkflow(
 /**
  * Execute planning workflow using the plan.md prompt
  */
-export async function executePlanningWorkflow(
-  context: WorkflowContext
-): Promise<string> {
+export async function executePlanningWorkflow(context: WorkflowContext): Promise<string> {
   const workflowContent = await readWorkflowFile("plan.md");
   const prompt = replaceTemplateVariables(workflowContent, context);
 
   const result = await generateTextFromPrompt(prompt, {
-    system: "You are a technical planning assistant. Follow the workflow instructions carefully and create detailed implementation plans.",
+    system:
+      "You are a technical planning assistant. Follow the workflow instructions carefully and create detailed implementation plans.",
     temperature: 0.7,
     maxTokens: 4000,
   });
@@ -100,14 +98,15 @@ export type ImplementationResult = z.infer<typeof implementationSchema>;
  * Execute implementation workflow using the impl.md prompt
  */
 export async function executeImplementationWorkflow(
-  context: WorkflowContext
+  context: WorkflowContext,
 ): Promise<ImplementationResult> {
   const workflowContent = await readWorkflowFile("impl.md");
   const prompt = replaceTemplateVariables(workflowContent, context);
 
   const result = await generateObjectFromPrompt(prompt, {
     schema: implementationSchema,
-    system: "You are an implementation assistant. Follow the workflow instructions carefully and implement the requested changes. Provide structured output about what was done.",
+    system:
+      "You are an implementation assistant. Follow the workflow instructions carefully and implement the requested changes. Provide structured output about what was done.",
     temperature: 0.7,
     maxTokens: 4000,
   });
@@ -118,7 +117,9 @@ export async function executeImplementationWorkflow(
 /**
  * Get raw workflow content for a specific workflow type
  */
-export async function getWorkflowContent(workflowType: "research" | "plan" | "impl"): Promise<string> {
+export async function getWorkflowContent(
+  workflowType: "research" | "plan" | "impl",
+): Promise<string> {
   const filename = `${workflowType}.md`;
   return readWorkflowFile(filename);
 }
@@ -133,7 +134,7 @@ export async function executeWorkflow(
     system?: string;
     temperature?: number;
     maxTokens?: number;
-  } = {}
+  } = {},
 ): Promise<string> {
   const workflowContent = await getWorkflowContent(workflowType);
   const prompt = replaceTemplateVariables(workflowContent, context);

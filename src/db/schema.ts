@@ -1,13 +1,6 @@
 import { createId } from "@paralleldrive/cuid2";
 import { relations, sql } from "drizzle-orm";
-import {
-  boolean,
-  jsonb,
-  pgTable,
-  primaryKey,
-  text,
-  timestamp,
-} from "drizzle-orm/pg-core";
+import { boolean, jsonb, pgTable, primaryKey, text, timestamp } from "drizzle-orm/pg-core";
 
 // Helper for timestamps
 const timestamps = {
@@ -88,9 +81,7 @@ export const account = pgTable(
     password: text("password"),
     ...timestamps,
   },
-  (table) => [
-    { pk: primaryKey({ columns: [table.providerId, table.accountId] }) },
-  ],
+  (table) => [{ pk: primaryKey({ columns: [table.providerId, table.accountId] }) }],
 );
 
 export const verification = pgTable("verification", {

@@ -12,17 +12,11 @@ export default function LoginButton() {
       onClick={() => {
         authClient.signIn.social({
           provider: "github",
-          callbackURL: `${window.location.origin}/dashboard`,
+          callbackURL: `${window.location.origin}`,
         });
       }}
     >
-      <Image
-        src="/github.svg"
-        alt="GitHub Logo"
-        width={20}
-        height={20}
-        className="mr-2"
-      />
+      <Image src="/github.svg" alt="GitHub Logo" width={20} height={20} className="mr-2" />
       Continue with GitHub
     </Button>
   );

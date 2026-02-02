@@ -1,34 +1,31 @@
-"use client"
+"use client";
 
-import React from "react"
-import { useDroppable } from "@dnd-kit/core"
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable"
-import type { Task } from "@/db/schema"
-import { KanbanCard } from "./kanban-card"
-import { cn } from "@/lib/utils"
+import React from "react";
+import { useDroppable } from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import type { Task } from "@/db/schema";
+import { KanbanCard } from "./kanban-card";
+import { cn } from "@/lib/utils";
 
 interface KanbanColumnProps {
-  id: string
-  title: string
-  color: string
-  tasks: (Task & { comments: { id: string }[] })[]
-  onTaskClick: (task: Task & { comments: { id: string }[] }) => void
+  id: string;
+  title: string;
+  color: string;
+  tasks: (Task & { comments: { id: string }[] })[];
+  onTaskClick: (task: Task & { comments: { id: string }[] }) => void;
 }
 
 export function KanbanColumn({ id, title, color, tasks, onTaskClick }: KanbanColumnProps) {
   const { isOver, setNodeRef } = useDroppable({
     id,
-  })
+  });
 
   return (
     <div
       ref={setNodeRef}
       className={cn(
         "flex flex-col min-w-[280px] w-[280px] bg-zinc-50 rounded-lg p-3",
-        isOver && "ring-2 ring-primary ring-inset"
+        isOver && "ring-2 ring-primary ring-inset",
       )}
     >
       <div className="flex items-center justify-between mb-3">
@@ -40,20 +37,13 @@ export function KanbanColumn({ id, title, color, tasks, onTaskClick }: KanbanCol
           {tasks.length}
         </span>
       </div>
-      <SortableContext
-        items={tasks.map((t) => t.id)}
-        strategy={verticalListSortingStrategy}
-      >
+      <SortableContext items={tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
         <div className="flex flex-col gap-2 min-h-[100px]">
           {tasks.map((task) => (
-            <KanbanCard
-              key={task.id}
-              task={task}
-              onClick={() => onTaskClick(task)}
-            />
+            <KanbanCard key={task.id} task={task} onClick={() => onTaskClick(task)} />
           ))}
         </div>
       </SortableContext>
     </div>
-  )
+  );
 }

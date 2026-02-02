@@ -1,19 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import type {
-  Task,
-  TaskStatus,
-  Comment,
-  RalphPlan,
-  Priority,
-} from "@/db/schema";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import type { Task, TaskStatus, Comment, RalphPlan, Priority } from "@/db/schema";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -105,9 +94,7 @@ export function TaskDialog({
               <span className="text-sm text-muted-foreground">Status:</span>
               <Select
                 value={task.status}
-                onValueChange={(value) =>
-                  onStatusChange(task.id, value as TaskStatus)
-                }
+                onValueChange={(value) => onStatusChange(task.id, value as TaskStatus)}
               >
                 <SelectTrigger className="w-[180px]">
                   <SelectValue />
@@ -116,9 +103,7 @@ export function TaskDialog({
                   {taskStatuses.map((status) => (
                     <SelectItem key={status.id} value={status.id}>
                       <div className="flex items-center gap-2">
-                        <div
-                          className={`w-2 h-2 rounded-full ${status.color}`}
-                        />
+                        <div className={`w-2 h-2 rounded-full ${status.color}`} />
                         {status.label}
                       </div>
                     </SelectItem>
@@ -155,21 +140,15 @@ export function TaskDialog({
                   <p className="text-blue-700">{task.ralphPlan.overview}</p>
                 </div>
                 <div>
-                  <h5 className="font-medium text-blue-800 mb-1">
-                    Files to Modify
-                  </h5>
+                  <h5 className="font-medium text-blue-800 mb-1">Files to Modify</h5>
                   <ul className="list-disc list-inside text-blue-700">
-                    {(task.ralphPlan.filesToModify as string[]).map(
-                      (file: string, i: number) => (
-                        <li key={i}>{file}</li>
-                      ),
-                    )}
+                    {(task.ralphPlan.filesToModify as string[]).map((file: string, i: number) => (
+                      <li key={i}>{file}</li>
+                    ))}
                   </ul>
                 </div>
                 <div>
-                  <h5 className="font-medium text-blue-800 mb-1">
-                    Implementation Plan
-                  </h5>
+                  <h5 className="font-medium text-blue-800 mb-1">Implementation Plan</h5>
                   <ol className="list-decimal list-inside text-blue-700 space-y-1">
                     {(
                       task.ralphPlan.implementationPlan as Array<{
@@ -180,20 +159,15 @@ export function TaskDialog({
                       }>
                     ).map((step, i: number) => (
                       <li key={i}>
-                        <span className="font-medium">{step.title}</span>:{" "}
-                        {step.description}
+                        <span className="font-medium">{step.title}</span>: {step.description}
                       </li>
                     ))}
                   </ol>
                 </div>
                 {task.ralphPlan.testingStrategy && (
                   <div>
-                    <h5 className="font-medium text-blue-800 mb-1">
-                      Testing Strategy
-                    </h5>
-                    <p className="text-blue-700">
-                      {task.ralphPlan.testingStrategy}
-                    </p>
+                    <h5 className="font-medium text-blue-800 mb-1">Testing Strategy</h5>
+                    <p className="text-blue-700">{task.ralphPlan.testingStrategy}</p>
                   </div>
                 )}
               </div>
@@ -201,42 +175,36 @@ export function TaskDialog({
           )}
 
           {/* Build Approval */}
-          {task.status === "READY_TO_BUILD" &&
-            task.buildStatus === "PENDING_APPROVAL" && (
-              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-medium text-orange-900">
-                      Ready to Build
-                    </h4>
-                    <p className="text-sm text-orange-700">
-                      Ralph has prepared the implementation plan. Click approve
-                      to start the build.
-                    </p>
-                  </div>
-                  <Button
-                    onClick={handleApproveBuild}
-                    disabled={isApproving}
-                    className="bg-orange-600 hover:bg-orange-700"
-                  >
-                    {isApproving ? (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    ) : (
-                      <Play className="w-4 h-4 mr-2" />
-                    )}
-                    Approve & Build
-                  </Button>
+          {task.status === "READY_TO_BUILD" && task.buildStatus === "PENDING_APPROVAL" && (
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="font-medium text-orange-900">Ready to Build</h4>
+                  <p className="text-sm text-orange-700">
+                    Ralph has prepared the implementation plan. Click approve to start the build.
+                  </p>
                 </div>
+                <Button
+                  onClick={handleApproveBuild}
+                  disabled={isApproving}
+                  className="bg-orange-600 hover:bg-orange-700"
+                >
+                  {isApproving ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Play className="w-4 h-4 mr-2" />
+                  )}
+                  Approve & Build
+                </Button>
               </div>
-            )}
+            </div>
+          )}
 
           {task.buildStatus === "IN_PROGRESS" && (
             <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
               <div className="flex items-center gap-2">
                 <Loader2 className="w-4 h-4 text-purple-600 animate-spin" />
-                <span className="font-medium text-purple-900">
-                  Build in Progress
-                </span>
+                <span className="font-medium text-purple-900">Build in Progress</span>
               </div>
             </div>
           )}
@@ -245,9 +213,33 @@ export function TaskDialog({
             <div className="bg-green-50 border border-green-200 rounded-lg p-4">
               <div className="flex items-center gap-2">
                 <CheckCircle className="w-4 h-4 text-green-600" />
-                <span className="font-medium text-green-900">
-                  Build Completed
-                </span>
+                <span className="font-medium text-green-900">Build Completed</span>
+              </div>
+            </div>
+          )}
+
+          {/* Force Rebuild for FAILED status */}
+          {task.status === "READY_TO_BUILD" && task.buildStatus === "FAILED" && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="font-medium text-red-900">Build Failed</h4>
+                  <p className="text-sm text-red-700">
+                    The previous build attempt failed. You can retry the build.
+                  </p>
+                </div>
+                <Button
+                  onClick={handleApproveBuild}
+                  disabled={isApproving}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  {isApproving ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Play className="w-4 h-4 mr-2" />
+                  )}
+                  Force Rebuild
+                </Button>
               </div>
             </div>
           )}
@@ -274,17 +266,13 @@ export function TaskDialog({
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <span className="font-medium text-sm">
-                        {comment.isAIGenerated
-                          ? "Ralph"
-                          : comment.author.name || "Anonymous"}
+                        {comment.isAIGenerated ? "Ralph" : comment.author.name || "Anonymous"}
                       </span>
                       <span className="text-xs text-muted-foreground">
                         {comment?.createdAt.toString()}
                       </span>
                     </div>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {comment.content}
-                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">{comment.content}</p>
                   </div>
                 </div>
               ))}
@@ -304,11 +292,7 @@ export function TaskDialog({
                 disabled={isSubmitting || !comment.trim()}
                 className="self-end"
               >
-                {isSubmitting ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  "Post"
-                )}
+                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Post"}
               </Button>
             </div>
           </div>

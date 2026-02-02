@@ -29,7 +29,7 @@ export class GitHubService {
     owner: string,
     repo: string,
     path: string = "",
-    ref?: string
+    ref?: string,
   ) {
     const { data } = await this.octokit.rest.repos.getContent({
       owner,
@@ -56,7 +56,7 @@ export class GitHubService {
     title: string,
     head: string,
     base: string,
-    body?: string
+    body?: string,
   ) {
     const { data } = await this.octokit.rest.pulls.create({
       owner,
@@ -69,27 +69,88 @@ export class GitHubService {
     return data;
   }
 
+  async getDefaultBranch(owner: string, repo: string): Promise<string> {
+    try {
+      const { data } = await this.octokit.rest.repos.get({ owner, repo });
+      console.log(
+        `GitHub API: Repository ${owner}/${repo} default branch is "${data.default_branch}"`,
+      );
+      return data.default_branch;
+    } catch (error: any) {
+      console.error(
+        `GitHub API Error: Failed to get repository info for ${owner}/${repo}`,
+      );
+      console.error(`Status: ${error.status}, Message: ${error.message}`);
+      if (error.status === 404) {
+        throw new Error(
+          `Repository "${owner}/${repo}" not found or not accessible. Please check:\n` +
+            `1. The repository exists\n` +
+            `2. Your GitHub token has access to this repository\n` +
+            `3. The repository owner and name are correct`,
+        );
+      }
+      throw error;
+    }
+  }
+
   async createBranch(
     owner: string,
     repo: string,
     branch: string,
-    fromBranch: string = "main"
+    fromBranch?: string,
   ) {
-    // Get the SHA of the latest commit on the base branch
-    const { data: refData } = await this.octokit.rest.git.getRef({
-      owner,
-      repo,
-      ref: `heads/${fromBranch}`,
-    });
+    // If no fromBranch specified, get the default branch
+    if (!fromBranch) {
+      fromBranch = await this.getDefaultBranch(owner, repo);
+    }
 
-    // Create a new branch from that SHA
-    const { data } = await this.octokit.rest.git.createRef({
-      owner,
-      repo,
-      ref: `refs/heads/${branch}`,
-      sha: refData.object.sha,
-    });
-    return data;
+    console.log(`Creating branch "${branch}" from "${fromBranch}" in ${owner}/${repo}`);
+
+    try {
+      // Get the SHA of the latest commit on the base branch
+      console.log(`Getting ref for heads/${fromBranch}...`);
+      const { data: refData } = await this.octokit.rest.git.getRef({
+        owner,
+        repo,
+        ref: `heads/${fromBranch}`,
+      });
+      console.log(`Got SHA: ${refData.object.sha}`);
+
+      // Create a new branch from that SHA
+      console.log(`Creating ref refs/heads/${branch}...`);
+      const { data } = await this.octokit.rest.git.createRef({
+        owner,
+        repo,
+        ref: `refs/heads/${branch}`,
+        sha: refData.object.sha,
+      });
+      console.log(`Branch created successfully`);
+      return data;
+    } catch (error: any) {
+      console.error(`Error creating branch:`, {
+        status: error.status,
+        message: error.message,
+        response: error.response?.data,
+      });
+      
+      if (error.status === 404) {
+        // Check if it's a permission issue or branch not found
+        const errorMessage = error.response?.data?.message || error.message;
+        if (errorMessage.includes("Not Found")) {
+          throw new Error(
+            `Cannot access repository ${owner}/${repo}. This could be due to:\n` +
+            `1. The GitHub token doesn't have write access to this repository\n` +
+            `2. The repository requires additional permissions\n` +
+            `3. Branch "${fromBranch}" doesn't exist\n\n` +
+            `Please re-authenticate with GitHub and ensure you grant access to this repository.`,
+          );
+        }
+        throw new Error(
+          `Branch "${fromBranch}" not found in repository ${owner}/${repo}. Please check the repository settings.`,
+        );
+      }
+      throw error;
+    }
   }
 }
 
@@ -113,7 +174,11 @@ export class RepoCloner {
 
     // Clone the repository
     const git = simpleGit();
-    await git.clone(repoUrl, targetDir, ["--branch", branch, "--single-branch"]);
+    await git.clone(repoUrl, targetDir, [
+      "--branch",
+      branch,
+      "--single-branch",
+    ]);
 
     return targetDir;
   }
@@ -176,18 +241,44 @@ export class BuildExecutor {
     const repoPath = await this.cloner.getRepoPath(projectId);
 
     try {
-      // Step 1: Clone or pull the repository
-      console.log(`Cloning repository ${repoUrl}...`);
-      await this.cloner.cloneRepo(repoUrl, projectId, branch);
-
-      // Step 2: Create a new branch via GitHub API
-      console.log(`Creating branch ${branchName}...`);
+      // Step 1: Get the default branch from GitHub API
+      let baseBranch: string;
       try {
+        // Always get the default branch from GitHub
+        baseBranch = await this.githubService.getDefaultBranch(
+          repoOwner,
+          repoName,
+        );
+        console.log(
+          `Default branch for ${repoOwner}/${repoName}: ${baseBranch}`,
+        );
+      } catch (error: any) {
+        // If we can't get the default branch, we can't proceed
+        console.error(`Failed to get default branch from GitHub:`, error);
+        return {
+          success: false,
+          message:
+            `Cannot access repository ${repoOwner}/${repoName}. Please check:\n` +
+            `1. Your GitHub token has access to this repository\n` +
+            `2. The repository owner (${repoOwner}) and name (${repoName}) are correct\n` +
+            `3. The repository exists and is accessible\n\n` +
+            `Error: ${error.message}`,
+        };
+      }
+
+      // Step 2: Clone or pull the repository
+      console.log(`Cloning repository ${repoUrl} (branch: ${baseBranch})...`);
+      await this.cloner.cloneRepo(repoUrl, projectId, baseBranch);
+
+      // Step 3: Create a new branch via GitHub API
+      console.log(`Creating branch ${branchName} from ${baseBranch}...`);
+      try {
+        console.log({ repoOwner, repoName, branchName, baseBranch });
         await this.githubService.createBranch(
           repoOwner,
           repoName,
           branchName,
-          branch
+          baseBranch,
         );
       } catch (error: any) {
         // Branch might already exist, that's okay
@@ -199,7 +290,7 @@ export class BuildExecutor {
 
       // Step 3: Checkout the new branch locally
       const git = simpleGit(repoPath);
-      await git.checkoutBranch(branchName, `origin/${branch}`);
+      await git.checkoutBranch(branchName, `origin/${baseBranch}`);
 
       // Step 4: Generate code changes using AI
       console.log("Generating code changes...");
@@ -207,13 +298,14 @@ export class BuildExecutor {
         repoPath,
         taskTitle,
         taskDescription,
-        ralphPlan
+        ralphPlan,
       );
 
       if (filesChanged.length === 0) {
         return {
           success: false,
-          message: "No files were changed. The AI could not generate appropriate changes.",
+          message:
+            "No files were changed. The AI could not generate appropriate changes.",
         };
       }
 
@@ -223,7 +315,7 @@ export class BuildExecutor {
       await git.commit(
         `feat: ${taskTitle}\n\n${ralphPlan.overview}\n\nChanges:\n${filesChanged
           .map((f) => `- ${f}`)
-          .join("\n")}`
+          .join("\n")}`,
       );
 
       // Step 6: Push the branch
@@ -238,8 +330,8 @@ export class BuildExecutor {
         repoName,
         `feat: ${taskTitle}`,
         branchName,
-        branch,
-        prBody
+        baseBranch,
+        prBody,
       );
 
       return {
@@ -262,7 +354,7 @@ export class BuildExecutor {
     repoPath: string,
     taskTitle: string,
     taskDescription: string,
-    ralphPlan: RalphPlan
+    ralphPlan: RalphPlan,
   ): Promise<string[]> {
     const filesChanged: string[] = [];
 
@@ -282,7 +374,7 @@ export class BuildExecutor {
 
         // Find the relevant implementation step for this file
         const relevantSteps = ralphPlan.implementationPlan.filter((step) =>
-          step.files.some((f) => filePath.includes(f) || f.includes(filePath))
+          step.files.some((f) => filePath.includes(f) || f.includes(filePath)),
         );
 
         // Generate the new content using AI
@@ -305,7 +397,7 @@ Relevant implementation steps:
 ${relevantSteps
   .map(
     (step) =>
-      `Step ${step.step}: ${step.title}\n${step.description}\nFiles: ${step.files.join(", ")}`
+      `Step ${step.step}: ${step.title}\n${step.description}\nFiles: ${step.files.join(", ")}`,
   )
   .join("\n\n")}
 
@@ -344,12 +436,12 @@ Respond with ONLY the file content, no markdown code blocks, no explanations.`;
   private generatePRBody(
     taskTitle: string,
     taskDescription: string,
-    ralphPlan: RalphPlan
+    ralphPlan: RalphPlan,
   ): string {
     const implementationSteps = ralphPlan.implementationPlan
       .map(
         (step) =>
-          `### Step ${step.step}: ${step.title}\n${step.description}\n\n**Files:** ${step.files.join(", ")}`
+          `### Step ${step.step}: ${step.title}\n${step.description}\n\n**Files:** ${step.files.join(", ")}`,
       )
       .join("\n\n");
 

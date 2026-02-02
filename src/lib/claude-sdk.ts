@@ -1,5 +1,5 @@
-import Anthropic from '@anthropic-ai/sdk';
-import { z } from 'zod';
+import Anthropic from "@anthropic-ai/sdk";
+import { z } from "zod";
 
 // Initialize Anthropic client with API key from environment
 const anthropic = new Anthropic({
@@ -7,10 +7,10 @@ const anthropic = new Anthropic({
 });
 
 // Model configuration
-const CLAUDE_MODEL = process.env.CLAUDE_MODEL || 'claude-3-5-sonnet-20241022';
+const CLAUDE_MODEL = process.env.CLAUDE_MODEL || "claude-3-5-sonnet-20241022";
 
 export interface ClaudeMessage {
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   content: string;
 }
 
@@ -32,7 +32,7 @@ export interface GenerateObjectOptions<T extends z.ZodType> {
  */
 export async function generateText(
   messages: ClaudeMessage[],
-  options: GenerateTextOptions = {}
+  options: GenerateTextOptions = {},
 ): Promise<string> {
   const { system, temperature = 0.7, maxTokens = 4096 } = options;
 
@@ -41,15 +41,15 @@ export async function generateText(
     max_tokens: maxTokens,
     temperature,
     system,
-    messages: messages.map(msg => ({
+    messages: messages.map((msg) => ({
       role: msg.role,
       content: msg.content,
     })),
   });
 
   const content = response.content[0];
-  if (content.type !== 'text') {
-    throw new Error('Expected text response from Claude');
+  if (content.type !== "text") {
+    throw new Error("Expected text response from Claude");
   }
 
   return content.text;
@@ -60,9 +60,9 @@ export async function generateText(
  */
 export async function generateTextFromPrompt(
   prompt: string,
-  options: GenerateTextOptions = {}
+  options: GenerateTextOptions = {},
 ): Promise<string> {
-  return generateText([{ role: 'user', content: prompt }], options);
+  return generateText([{ role: "user", content: prompt }], options);
 }
 
 /**
@@ -71,48 +71,50 @@ export async function generateTextFromPrompt(
  */
 export async function generateObject<T extends z.ZodType>(
   messages: ClaudeMessage[],
-  options: GenerateObjectOptions<T>
+  options: GenerateObjectOptions<T>,
 ): Promise<z.infer<T>> {
   const { schema, system, temperature = 0.7, maxTokens = 4096 } = options;
 
   // Convert Zod schema to JSON schema for Claude
   const jsonSchema = zodToJsonSchema(schema);
-  
+
   // Create a tool for structured output
-  const toolName = 'generate_structured_output';
-  
+  const toolName = "generate_structured_output";
+
   const response = await anthropic.messages.create({
     model: CLAUDE_MODEL,
     max_tokens: maxTokens,
     temperature,
-    system: system || 'You are a helpful assistant that generates structured data. Always use the provided tool to output your response.',
-    messages: messages.map(msg => ({
+    system:
+      system ||
+      "You are a helpful assistant that generates structured data. Always use the provided tool to output your response.",
+    messages: messages.map((msg) => ({
       role: msg.role,
       content: msg.content,
     })),
     tools: [
       {
         name: toolName,
-        description: 'Generate structured output according to the schema',
+        description: "Generate structured output according to the schema",
         input_schema: jsonSchema as any,
       },
     ],
-    tool_choice: { type: 'tool', name: toolName },
+    tool_choice: { type: "tool", name: toolName },
   });
 
   // Extract the tool use from response
   const toolUse = response.content.find(
-    (content): content is { type: 'tool_use'; id: string; name: string; input: unknown } => 
-      content.type === 'tool_use'
+    (content): content is { type: "tool_use"; id: string; name: string; input: unknown } =>
+      content.type === "tool_use",
   );
 
   if (!toolUse) {
-    throw new Error('Expected tool_use response from Claude for structured output');
+    throw new Error("Expected tool_use response from Claude for structured output");
   }
 
   // Validate the output against the Zod schema
   const parsed = schema.safeParse(toolUse.input);
-  
+
   if (!parsed.success) {
     throw new Error(`Schema validation failed: ${parsed.error.message}`);
   }
@@ -125,9 +127,9 @@ export async function generateObject<T extends z.ZodType>(
  */
 export async function generateObjectFromPrompt<T extends z.ZodType>(
   prompt: string,
-  options: GenerateObjectOptions<T>
+  options: GenerateObjectOptions<T>,
 ): Promise<z.infer<T>> {
-  return generateObject([{ role: 'user', content: prompt }], options);
+  return generateObject([{ role: "user", content: prompt }], options);
 }
 
 /**
@@ -138,52 +140,52 @@ function zodToJsonSchema(schema: z.ZodType): unknown {
   // For now, we'll use a simple approach
   // In production, you might want to use the 'zod-to-json-schema' package
   const def = (schema as any)._def;
-  
+
   if (schema instanceof z.ZodObject) {
     const shape = (schema as z.ZodObject<any>).shape;
     const properties: Record<string, unknown> = {};
     const required: string[] = [];
-    
+
     for (const [key, value] of Object.entries(shape)) {
       properties[key] = zodToJsonSchema(value as z.ZodType);
       if (!(value as z.ZodType).isOptional()) {
         required.push(key);
       }
     }
-    
+
     return {
-      type: 'object',
+      type: "object",
       properties,
       required,
     };
   }
-  
+
   if (schema instanceof z.ZodString) {
-    return { type: 'string' };
+    return { type: "string" };
   }
-  
+
   if (schema instanceof z.ZodNumber) {
-    return { type: 'number' };
+    return { type: "number" };
   }
-  
+
   if (schema instanceof z.ZodBoolean) {
-    return { type: 'boolean' };
+    return { type: "boolean" };
   }
-  
+
   if (schema instanceof z.ZodArray) {
     const elementSchema = (schema as z.ZodArray<any>).element;
     return {
-      type: 'array',
+      type: "array",
       items: zodToJsonSchema(elementSchema),
     };
   }
-  
+
   if (schema instanceof z.ZodOptional) {
     return zodToJsonSchema((schema as z.ZodOptional<any>).unwrap());
   }
-  
+
   // Default fallback
-  return { type: 'object' };
+  return { type: "object" };
 }
 
 // Export the anthropic client for direct use if needed

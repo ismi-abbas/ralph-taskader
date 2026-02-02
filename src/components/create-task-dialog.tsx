@@ -1,62 +1,49 @@
-"use client"
+"use client";
 
-import React, { useState } from "react"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
+import React, { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { priorities } from "@/lib/constants"
-import { Loader2 } from "lucide-react"
+} from "@/components/ui/select";
+import { priorities } from "@/lib/constants";
+import { Loader2 } from "lucide-react";
 
 interface CreateTaskDialogProps {
-  isOpen: boolean
-  onClose: () => void
-  onSubmit: (data: {
-    title: string
-    description: string
-    priority: string
-  }) => Promise<void>
-  projectId: string
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (data: { title: string; description: string; priority: string }) => Promise<void>;
+  projectId: string;
 }
 
-export function CreateTaskDialog({
-  isOpen,
-  onClose,
-  onSubmit,
-}: CreateTaskDialogProps) {
-  const [title, setTitle] = useState("")
-  const [description, setDescription] = useState("")
-  const [priority, setPriority] = useState("MEDIUM")
-  const [isSubmitting, setIsSubmitting] = useState(false)
+export function CreateTaskDialog({ isOpen, onClose, onSubmit }: CreateTaskDialogProps) {
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [priority, setPriority] = useState("MEDIUM");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!title.trim()) return
+    e.preventDefault();
+    if (!title.trim()) return;
 
-    setIsSubmitting(true)
+    setIsSubmitting(true);
     await onSubmit({
       title: title.trim(),
       description: description.trim(),
       priority,
-    })
-    setIsSubmitting(false)
-    setTitle("")
-    setDescription("")
-    setPriority("MEDIUM")
-    onClose()
-  }
+    });
+    setIsSubmitting(false);
+    setTitle("");
+    setDescription("");
+    setPriority("MEDIUM");
+    onClose();
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -106,14 +93,12 @@ export function CreateTaskDialog({
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : null}
+              {isSubmitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
               Create Task
             </Button>
           </div>
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

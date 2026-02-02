@@ -1,12 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Github } from "lucide-react";
 import Image from "next/image";
 import { authClient } from "@/lib/auth-client";
@@ -21,9 +15,7 @@ export default function SignInPage() {
             <span className="text-white font-bold text-3xl">R</span>
           </div>
           <CardTitle className="text-2xl">Welcome to Ralph</CardTitle>
-          <CardDescription>
-            AI-powered task management and code generation
-          </CardDescription>
+          <CardDescription>AI-powered task management and code generation</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <LoginButton />

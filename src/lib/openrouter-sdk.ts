@@ -8,8 +8,7 @@ const openrouter = new OpenAI({
 });
 
 // Model configuration - defaults to a free model
-const DEFAULT_MODEL =
-  process.env.OPENROUTER_MODEL || "stepfun/step-3.5-flash:free";
+const DEFAULT_MODEL = process.env.OPENROUTER_MODEL || "moonshotai/kimi-k2.5";
 
 export interface OpenRouterMessage {
   role: "user" | "assistant" | "system";
@@ -38,7 +37,7 @@ export interface GenerateObjectOptions<T extends z.ZodType> {
  */
 export async function generateText(
   messages: OpenRouterMessage[],
-  options: GenerateTextOptions = {}
+  options: GenerateTextOptions = {},
 ): Promise<string> {
   const {
     system,
@@ -69,7 +68,9 @@ export async function generateText(
   }
 
   try {
+    console.log("OpenRouter request:", requestBody);
     const response = await openrouter.chat.completions.create(requestBody);
+    console.log("OpenRouter response:", response);
 
     return response.choices[0].message.content || "";
   } catch (error: any) {
@@ -90,7 +91,7 @@ export async function generateText(
  */
 export async function generateTextFromPrompt(
   prompt: string,
-  options: GenerateTextOptions = {}
+  options: GenerateTextOptions = {},
 ): Promise<string> {
   return generateText([{ role: "user", content: prompt }], options);
 }
@@ -101,15 +102,9 @@ export async function generateTextFromPrompt(
  */
 export async function generateObject<T extends z.ZodType>(
   messages: OpenRouterMessage[],
-  options: GenerateObjectOptions<T>
+  options: GenerateObjectOptions<T>,
 ): Promise<z.infer<T>> {
-  const {
-    schema,
-    system,
-    temperature = 0.7,
-    maxTokens = 4096,
-    model = DEFAULT_MODEL,
-  } = options;
+  const { schema, system, temperature = 0.7, maxTokens = 4096, model = DEFAULT_MODEL } = options;
 
   const apiMessages: OpenRouterMessage[] = [];
 
@@ -177,7 +172,7 @@ export async function generateObject<T extends z.ZodType>(
  */
 export async function generateObjectFromPrompt<T extends z.ZodType>(
   prompt: string,
-  options: GenerateObjectOptions<T>
+  options: GenerateObjectOptions<T>,
 ): Promise<z.infer<T>> {
   return generateObject([{ role: "user", content: prompt }], options);
 }

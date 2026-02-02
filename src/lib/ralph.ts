@@ -14,27 +14,19 @@ import { eq } from "drizzle-orm";
 
 // Zod schema for structured AI output
 const ralphPlanSchema = z.object({
-  overview: z
-    .string()
-    .describe("A brief overview of the implementation approach"),
-  filesToModify: z
-    .array(z.string())
-    .describe("List of files that need to be modified"),
+  overview: z.string().describe("A brief overview of the implementation approach"),
+  filesToModify: z.array(z.string()).describe("List of files that need to be modified"),
   implementationPlan: z
     .array(
       z.object({
         step: z.number().describe("Step number"),
         title: z.string().describe("Step title"),
-        description: z
-          .string()
-          .describe("Detailed description of what needs to be done"),
+        description: z.string().describe("Detailed description of what needs to be done"),
         files: z.array(z.string()).describe("Files involved in this step"),
-      })
+      }),
     )
     .describe("Detailed implementation steps"),
-  dependencies: z
-    .array(z.string())
-    .describe("Any dependencies to install"),
+  dependencies: z.array(z.string()).describe("Any dependencies to install"),
   testingStrategy: z.string().describe("How to test this implementation"),
 });
 
@@ -78,7 +70,7 @@ export class RalphService {
     const summary = indexedFiles
       .map(
         (file) =>
-          `File: ${file.filePath}\nLanguage: ${file.language}\n\n${file.content.slice(0, 1000)}...\n---`
+          `File: ${file.filePath}\nLanguage: ${file.language}\n\n${file.content.slice(0, 1000)}...\n---`,
       )
       .join("\n\n");
 
@@ -92,7 +84,7 @@ export class RalphService {
     taskId: string,
     taskTitle: string,
     taskDescription: string,
-    projectId: string
+    projectId: string,
   ): Promise<string> {
     // Get codebase context
     const indexedFiles = await db.query.codeIndex.findMany({
@@ -118,7 +110,7 @@ export class RalphService {
     } catch (error) {
       console.error("Research workflow error:", error);
       throw new Error(
-        `Failed to conduct research: ${error instanceof Error ? error.message : "Unknown error"}`
+        `Failed to conduct research: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
     }
   }
@@ -131,7 +123,7 @@ export class RalphService {
     taskTitle: string,
     taskDescription: string,
     projectId: string,
-    researchFindings?: string
+    researchFindings?: string,
   ): Promise<RalphPlan> {
     // Get codebase context
     const indexedFiles = await db.query.codeIndex.findMany({
@@ -182,7 +174,7 @@ Create a detailed, actionable implementation plan.`;
     } catch (error) {
       console.error("Planning workflow error:", error);
       throw new Error(
-        `Failed to create plan: ${error instanceof Error ? error.message : "Unknown error"}`
+        `Failed to create plan: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
     }
   }
@@ -193,7 +185,7 @@ Create a detailed, actionable implementation plan.`;
   async generatePlan(
     taskTitle: string,
     taskDescription: string,
-    projectId: string
+    projectId: string,
   ): Promise<RalphPlan> {
     return this.createPlan("legacy", taskTitle, taskDescription, projectId);
   }
@@ -206,7 +198,7 @@ Create a detailed, actionable implementation plan.`;
     taskTitle: string,
     taskDescription: string,
     projectId: string,
-    ralphPlan: RalphPlan
+    ralphPlan: RalphPlan,
   ): Promise<{
     success: boolean;
     message: string;
@@ -241,9 +233,7 @@ Create a detailed, actionable implementation plan.`;
       // 3. Apply changes to files
       // 4. Create commits and PR
 
-      const { executeImplementationWorkflow } = await import(
-        "./workflow-service"
-      );
+      const { executeImplementationWorkflow } = await import("./workflow-service");
       const implementationResult = await executeImplementationWorkflow(context);
 
       return {
@@ -263,7 +253,7 @@ Create a detailed, actionable implementation plan.`;
   async executeBuild(
     taskId: string,
     projectId: string,
-    ralphPlan: RalphPlan
+    ralphPlan: RalphPlan,
   ): Promise<{ success: boolean; message: string; prUrl?: string }> {
     // This is a simplified version - in production, you'd want to:
     // 1. Create a new branch
@@ -278,8 +268,7 @@ Create a detailed, actionable implementation plan.`;
 
       return {
         success: true,
-        message:
-          "Build executed successfully. Changes have been prepared in a new branch.",
+        message: "Build executed successfully. Changes have been prepared in a new branch.",
       };
     } catch (error) {
       return {
@@ -291,10 +280,9 @@ Create a detailed, actionable implementation plan.`;
 
   private async getCodeFiles(
     dir: string,
-    relativePath: string = ""
+    relativePath: string = "",
   ): Promise<{ path: string; relativePath: string; language: string | null }[]> {
-    const files: { path: string; relativePath: string; language: string | null }[] =
-      [];
+    const files: { path: string; relativePath: string; language: string | null }[] = [];
     const entries = await fs.readdir(dir, { withFileTypes: true });
 
     const ignorePatterns = [

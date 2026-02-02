@@ -1,27 +1,27 @@
-import { auth as serverAuth } from "@/lib/auth"
-import { redirect } from "next/navigation"
-import { db } from "@/lib/db"
-import { project } from "@/db/schema"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { ArrowLeft } from "lucide-react"
+import { auth as serverAuth } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { db } from "@/lib/db";
+import { project } from "@/db/schema";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ArrowLeft } from "lucide-react";
 
 export default async function NewProjectPage() {
   const session = await serverAuth.api.getSession({
-    headers: await import("next/headers").then(h => h.headers()),
-  })
+    headers: await import("next/headers").then((h) => h.headers()),
+  });
 
   if (!session?.user) {
-    redirect("/auth/signin")
+    redirect("/auth/signin");
   }
 
   async function createProject(formData: FormData) {
-    "use server"
-    const name = formData.get("name") as string
-    const description = formData.get("description") as string
+    "use server";
+    const name = formData.get("name") as string;
+    const description = formData.get("description") as string;
 
-    if (!name) return
+    if (!name) return;
 
     const [newProject] = await db
       .insert(project)
@@ -30,9 +30,9 @@ export default async function NewProjectPage() {
         description,
         ownerId: session!.user.id,
       })
-      .returning()
+      .returning();
 
-    redirect(`/projects/${newProject.id}`)
+    redirect(`/projects/${newProject.id}`);
   }
 
   return (
@@ -52,23 +52,12 @@ export default async function NewProjectPage() {
       <div className="max-w-xl mx-auto px-4 py-8">
         <form action={createProject} className="space-y-6">
           <div>
-            <label className="text-sm font-medium mb-1 block">
-              Project Name
-            </label>
-            <Input
-              name="name"
-              placeholder="Enter project name..."
-              required
-            />
+            <label className="text-sm font-medium mb-1 block">Project Name</label>
+            <Input name="name" placeholder="Enter project name..." required />
           </div>
           <div>
-            <label className="text-sm font-medium mb-1 block">
-              Description
-            </label>
-            <Input
-              name="description"
-              placeholder="Enter project description..."
-            />
+            <label className="text-sm font-medium mb-1 block">Description</label>
+            <Input name="description" placeholder="Enter project description..." />
           </div>
           <div className="flex gap-2">
             <Link href="/" className="flex-1">
@@ -83,5 +72,5 @@ export default async function NewProjectPage() {
         </form>
       </div>
     </main>
-  )
+  );
 }
