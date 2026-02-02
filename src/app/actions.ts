@@ -2,10 +2,10 @@
 
 import { revalidatePath } from "next/cache"
 import { db } from "@/lib/db"
-import { project, task, comment, ralphPlan, repoConnection } from "@/db/schema"
+import { project, task, comment, ralphPlan, repoConnection, user } from "@/db/schema"
 import type { TaskStatus, Priority } from "@/db/schema"
 import { ralphService } from "@/lib/ralph"
-import { RepoCloner } from "@/lib/github"
+import { RepoCloner, BuildExecutor } from "@/lib/github"
 import { eq, desc } from "drizzle-orm"
 
 export async function getProject(projectId: string) {
@@ -229,6 +229,7 @@ export async function approveBuild(taskId: string, projectId: string) {
     where: eq(task.id, taskId),
     with: {
       ralphPlan: true,
+      project: true,
     },
   })
 
@@ -236,12 +237,40 @@ export async function approveBuild(taskId: string, projectId: string) {
     throw new Error("No Ralph plan found for this task")
   }
 
+  // Get repo connection for this project
+  const repoConn = await db.query.repoConnection.findFirst({
+    where: eq(repoConnection.projectId, projectId),
+  })
+
+  if (!repoConn) {
+    throw new Error("No repository connected to this project")
+  }
+
+  // Get the user's GitHub token
+  const userRes = await db.query.user.findFirst({
+    where: eq(user.id, fullTask.project.ownerId),
+  })
+
+  if (!userRes?.githubToken) {
+    throw new Error("User has no GitHub token. Please connect your GitHub account.")
+  }
+
   try {
-    // Execute build
-    const result = await ralphService.executeBuild(
+    // Create build executor with user's GitHub token
+    const buildExecutor = new BuildExecutor(userRes.githubToken)
+
+    // Execute the full build workflow
+    const result = await buildExecutor.executeBuild({
       taskId,
+      taskTitle: fullTask.title,
+      taskDescription: fullTask.description || "",
       projectId,
-      {
+      repoUrl: repoConn.repoUrl,
+      repoOwner: repoConn.repoOwner,
+      repoName: repoConn.repoName,
+      branch: repoConn.branch,
+      githubToken: userRes.githubToken,
+      ralphPlan: {
         overview: fullTask.ralphPlan.overview,
         filesToModify: fullTask.ralphPlan.filesToModify as string[],
         implementationPlan: fullTask.ralphPlan.implementationPlan as Array<{
@@ -252,8 +281,8 @@ export async function approveBuild(taskId: string, projectId: string) {
         }>,
         dependencies: (fullTask.ralphPlan.dependencies as string[]) || [],
         testingStrategy: fullTask.ralphPlan.testingStrategy || "",
-      }
-    )
+      },
+    })
 
     // Update task status
     await db
@@ -263,11 +292,15 @@ export async function approveBuild(taskId: string, projectId: string) {
       })
       .where(eq(task.id, taskId))
 
-    // Add comment
+    // Add comment with PR link if successful
+    const commentContent = result.success && result.prUrl
+      ? `✅ Build completed successfully!\n\n${result.message}\n\n**Pull Request:** ${result.prUrl}\n\n**Files changed:**\n${result.filesChanged?.map(f => `- ${f}`).join('\n') || 'None'}`
+      : `❌ Build failed:\n\n${result.message}`
+
     await db.insert(comment).values({
       taskId,
-      authorId: fullTask.projectId,
-      content: result.message,
+      authorId: fullTask.project.ownerId,
+      content: commentContent,
       isAIGenerated: true,
     })
 
@@ -281,8 +314,8 @@ export async function approveBuild(taskId: string, projectId: string) {
 
     await db.insert(comment).values({
       taskId,
-      authorId: fullTask.projectId,
-      content: `Build failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+      authorId: fullTask.project.ownerId,
+      content: `❌ Build failed: ${error instanceof Error ? error.message : "Unknown error"}`,
       isAIGenerated: true,
     })
 

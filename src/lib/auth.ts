@@ -1,11 +1,12 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
+import { nextCookies } from 'better-auth/next-js';
 import { db } from '@/db';
 import * as schema from '@/db/schema';
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
-    provider: 'sqlite',
+    provider: 'pg',
     schema: {
       user: schema.user,
       session: schema.session,
@@ -20,7 +21,7 @@ export const auth = betterAuth({
     github: {
       clientId: process.env.GITHUB_CLIENT_ID!,
       clientSecret: process.env.GITHUB_CLIENT_SECRET!,
-      redirectURI: `${process.env.NEXTAUTH_URL}/api/auth/callback/github`,
+      redirectURI: `${process.env.BETTER_AUTH_URL}/api/auth/callback/github`,
     },
   },
   session: {
@@ -37,6 +38,7 @@ export const auth = betterAuth({
       enabled: false,
     },
   },
+  plugins: [nextCookies()], // Required for server actions to set cookies - must be last plugin
 });
 
 export type Session = typeof auth.$Infer.Session.session;

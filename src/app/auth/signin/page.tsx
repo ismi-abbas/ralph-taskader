@@ -1,7 +1,16 @@
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Github } from "lucide-react"
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Github } from "lucide-react";
+import Image from "next/image";
+import { authClient } from "@/lib/auth-client";
+import LoginButton from "./login-button";
 
 export default function SignInPage() {
   return (
@@ -17,17 +26,12 @@ export default function SignInPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <a href="/api/auth/signin/github" className="block">
-            <Button className="w-full" size="lg">
-              <Github className="w-5 h-5 mr-2" />
-              Continue with GitHub
-            </Button>
-          </a>
+          <LoginButton />
           <p className="text-xs text-center text-muted-foreground">
             By signing in, you agree to our Terms of Service and Privacy Policy
           </p>
         </CardContent>
       </Card>
     </main>
-  )
+  );
 }

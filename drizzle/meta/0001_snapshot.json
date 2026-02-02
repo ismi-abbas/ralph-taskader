@@ -1,6 +1,6 @@
 {
-  "id": "b019aca3-8a40-4dcb-b3a7-b444cd238b28",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "155470f4-4ce6-4f62-bd10-b01b49fc1dfb",
+  "prevId": "b019aca3-8a40-4dcb-b3a7-b444cd238b28",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -105,15 +105,7 @@
           "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {
-        "account_provider_id_account_id_pk": {
-          "name": "account_provider_id_account_id_pk",
-          "columns": [
-            "provider_id",
-            "account_id"
-          ]
-        }
-      },
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
@@ -165,6 +157,13 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
         }
       },
       "indexes": {},
@@ -212,6 +211,13 @@
         },
         "created_at": {
           "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
@@ -462,6 +468,13 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
         }
       },
       "indexes": {},
@@ -536,6 +549,13 @@
         },
         "created_at": {
           "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
@@ -707,6 +727,13 @@
         },
         "created_at": {
           "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true,

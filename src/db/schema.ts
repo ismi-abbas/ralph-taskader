@@ -1,197 +1,194 @@
-import { sqliteTable, text, integer, primaryKey } from 'drizzle-orm/sqlite-core';
-import { createId } from '@paralleldrive/cuid2';
-import { relations, sql } from 'drizzle-orm';
+import { createId } from "@paralleldrive/cuid2";
+import { relations, sql } from "drizzle-orm";
+import {
+  boolean,
+  jsonb,
+  pgTable,
+  primaryKey,
+  text,
+  timestamp,
+} from "drizzle-orm/pg-core";
 
 // Helper for timestamps
 const timestamps = {
-  createdAt: integer('created_at', { mode: 'timestamp' })
+  createdAt: timestamp("created_at")
     .notNull()
-    .default(sql`(unixepoch())`),
-  updatedAt: integer('updated_at', { mode: 'timestamp' })
+    .default(sql`now()`),
+  updatedAt: timestamp("updated_at")
     .notNull()
-    .default(sql`(unixepoch())`)
+    .default(sql`now()`)
     .$onUpdate(() => new Date()),
 };
 
 // Enums
-export const taskStatusEnum = ['BACKLOG', 'READY', 'REQUIREMENTS', 'READY_TO_BUILD', 'IN_PROGRESS', 'DONE'] as const;
-export const priorityEnum = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] as const;
-export const buildStatusEnum = ['NOT_STARTED', 'PENDING_APPROVAL', 'APPROVED', 'IN_PROGRESS', 'COMPLETED', 'FAILED'] as const;
+export const taskStatusEnum = [
+  "BACKLOG",
+  "READY",
+  "REQUIREMENTS",
+  "READY_TO_BUILD",
+  "IN_PROGRESS",
+  "DONE",
+] as const;
+export const priorityEnum = ["LOW", "MEDIUM", "HIGH", "CRITICAL"] as const;
+export const buildStatusEnum = [
+  "NOT_STARTED",
+  "PENDING_APPROVAL",
+  "APPROVED",
+  "IN_PROGRESS",
+  "COMPLETED",
+  "FAILED",
+] as const;
 
-export type TaskStatus = typeof taskStatusEnum[number];
-export type Priority = typeof priorityEnum[number];
-export type BuildStatus = typeof buildStatusEnum[number];
+export type TaskStatus = (typeof taskStatusEnum)[number];
+export type Priority = (typeof priorityEnum)[number];
+export type BuildStatus = (typeof buildStatusEnum)[number];
 
 // Better Auth tables (following Better Auth schema)
-export const user = sqliteTable('user', {
-  id: text('id')
+export const user = pgTable("user", {
+  id: text("id")
     .primaryKey()
     .$defaultFn(() => createId()),
-  name: text('name'),
-  email: text('email').notNull().unique(),
-  emailVerified: integer('email_verified', { mode: 'boolean' }).default(false),
-  image: text('image'),
-  githubToken: text('github_token'),
-  createdAt: integer('created_at', { mode: 'timestamp' })
-    .notNull()
-    .default(sql`(unixepoch())`),
+  name: text("name"),
+  email: text("email").notNull().unique(),
+  emailVerified: boolean("email_verified").default(false),
+  image: text("image"),
+  githubToken: text("github_token"),
+  ...timestamps,
 });
 
-export const session = sqliteTable('session', {
-  id: text('id')
+export const session = pgTable("session", {
+  id: text("id")
     .primaryKey()
     .$defaultFn(() => createId()),
-  expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
-  token: text('token').notNull().unique(),
-  userId: text('user_id')
+  expiresAt: timestamp("expires_at").notNull(),
+  token: text("token").notNull().unique(),
+  userId: text("user_id")
     .notNull()
-    .references(() => user.id, { onDelete: 'cascade' }),
-  ipAddress: text('ip_address'),
-  userAgent: text('user_agent'),
-  createdAt: integer('created_at', { mode: 'timestamp' })
-    .notNull()
-    .default(sql`(unixepoch())`),
+    .references(() => user.id, { onDelete: "cascade" }),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  ...timestamps,
 });
 
-export const account = sqliteTable('account', {
-  id: text('id')
-    .$defaultFn(() => createId()),
-  userId: text('user_id')
-    .notNull()
-    .references(() => user.id, { onDelete: 'cascade' }),
-  accountId: text('account_id').notNull(),
-  providerId: text('provider_id').notNull(),
-  accessToken: text('access_token'),
-  refreshToken: text('refresh_token'),
-  idToken: text('id_token'),
-  accessTokenExpiresAt: integer('access_token_expires_at', { mode: 'timestamp' }),
-  refreshTokenExpiresAt: integer('refresh_token_expires_at', { mode: 'timestamp' }),
-  scope: text('scope'),
-  password: text('password'),
-  createdAt: integer('created_at', { mode: 'timestamp' })
-    .notNull()
-    .default(sql`(unixepoch())`),
-  updatedAt: integer('updated_at', { mode: 'timestamp' })
-    .notNull()
-    .default(sql`(unixepoch())`)
-    .$onUpdate(() => new Date()),
-}, (table) => ({
-  pk: primaryKey({ columns: [table.providerId, table.accountId] }),
-}));
+export const account = pgTable(
+  "account",
+  {
+    id: text("id").$defaultFn(() => createId()),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    accountId: text("account_id").notNull(),
+    providerId: text("provider_id").notNull(),
+    accessToken: text("access_token"),
+    refreshToken: text("refresh_token"),
+    idToken: text("id_token"),
+    accessTokenExpiresAt: timestamp("access_token_expires_at"),
+    refreshTokenExpiresAt: timestamp("refresh_token_expires_at"),
+    scope: text("scope"),
+    password: text("password"),
+    ...timestamps,
+  },
+  (table) => [
+    { pk: primaryKey({ columns: [table.providerId, table.accountId] }) },
+  ],
+);
 
-export const verification = sqliteTable('verification', {
-  id: text('id')
+export const verification = pgTable("verification", {
+  id: text("id")
     .primaryKey()
     .$defaultFn(() => createId()),
-  identifier: text('identifier').notNull(),
-  value: text('value').notNull(),
-  expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
-  createdAt: integer('created_at', { mode: 'timestamp' })
-    .notNull()
-    .default(sql`(unixepoch())`),
-  updatedAt: integer('updated_at', { mode: 'timestamp' })
-    .notNull()
-    .default(sql`(unixepoch())`)
-    .$onUpdate(() => new Date()),
+  identifier: text("identifier").notNull(),
+  value: text("value").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  ...timestamps,
 });
 
 // Application tables
-export const project = sqliteTable('project', {
-  id: text('id')
+export const project = pgTable("project", {
+  id: text("id")
     .primaryKey()
     .$defaultFn(() => createId()),
-  name: text('name').notNull(),
-  description: text('description'),
-  ownerId: text('owner_id')
+  name: text("name").notNull(),
+  description: text("description"),
+  ownerId: text("owner_id")
     .notNull()
-    .references(() => user.id, { onDelete: 'cascade' }),
+    .references(() => user.id, { onDelete: "cascade" }),
   ...timestamps,
 });
 
-export const repoConnection = sqliteTable('repo_connection', {
-  id: text('id')
+export const repoConnection = pgTable("repo_connection", {
+  id: text("id")
     .primaryKey()
     .$defaultFn(() => createId()),
-  projectId: text('project_id')
+  projectId: text("project_id")
     .notNull()
     .unique()
-    .references(() => project.id, { onDelete: 'cascade' }),
-  repoUrl: text('repo_url').notNull(),
-  repoName: text('repo_name').notNull(),
-  repoOwner: text('repo_owner').notNull(),
-  branch: text('branch').notNull().default('main'),
-  lastSyncedAt: integer('last_synced_at', { mode: 'timestamp' }),
-  createdAt: integer('created_at', { mode: 'timestamp' })
-    .notNull()
-    .default(sql`(unixepoch())`),
-});
-
-export const task = sqliteTable('task', {
-  id: text('id')
-    .primaryKey()
-    .$defaultFn(() => createId()),
-  title: text('title').notNull(),
-  description: text('description'),
-  status: text('status', { enum: taskStatusEnum }).notNull().default('BACKLOG'),
-  priority: text('priority', { enum: priorityEnum }).notNull().default('MEDIUM'),
-  buildStatus: text('build_status', { enum: buildStatusEnum }).notNull().default('NOT_STARTED'),
-  githubIssueUrl: text('github_issue_url'),
-  projectId: text('project_id')
-    .notNull()
-    .references(() => project.id, { onDelete: 'cascade' }),
+    .references(() => project.id, { onDelete: "cascade" }),
+  repoUrl: text("repo_url").notNull(),
+  repoName: text("repo_name").notNull(),
+  repoOwner: text("repo_owner").notNull(),
+  branch: text("branch").notNull().default("main"),
+  lastSyncedAt: timestamp("last_synced_at"),
   ...timestamps,
 });
 
-export const comment = sqliteTable('comment', {
-  id: text('id')
+export const task = pgTable("task", {
+  id: text("id")
     .primaryKey()
     .$defaultFn(() => createId()),
-  content: text('content').notNull(),
-  taskId: text('task_id')
+  title: text("title").notNull(),
+  description: text("description"),
+  status: text("status").notNull().default("BACKLOG"),
+  priority: text("priority").notNull().default("MEDIUM"),
+  buildStatus: text("build_status").notNull().default("NOT_STARTED"),
+  githubIssueUrl: text("github_issue_url"),
+  projectId: text("project_id")
     .notNull()
-    .references(() => task.id, { onDelete: 'cascade' }),
-  authorId: text('author_id')
-    .notNull()
-    .references(() => user.id, { onDelete: 'cascade' }),
-  isAIGenerated: integer('is_ai_generated', { mode: 'boolean' }).notNull().default(false),
-  createdAt: integer('created_at', { mode: 'timestamp' })
-    .notNull()
-    .default(sql`(unixepoch())`),
+    .references(() => project.id, { onDelete: "cascade" }),
+  ...timestamps,
 });
 
-export const ralphPlan = sqliteTable('ralph_plan', {
-  id: text('id')
+export const comment = pgTable("comment", {
+  id: text("id")
     .primaryKey()
     .$defaultFn(() => createId()),
-  taskId: text('task_id')
+  content: text("content").notNull(),
+  taskId: text("task_id")
+    .notNull()
+    .references(() => task.id, { onDelete: "cascade" }),
+  authorId: text("author_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  isAIGenerated: boolean("is_ai_generated").notNull().default(false),
+  ...timestamps,
+});
+
+export const ralphPlan = pgTable("ralph_plan", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  taskId: text("task_id")
     .notNull()
     .unique()
-    .references(() => task.id, { onDelete: 'cascade' }),
-  overview: text('overview').notNull(),
-  filesToModify: text('files_to_modify', { mode: 'json' }).notNull().$type<string[]>(),
-  implementationPlan: text('implementation_plan', { mode: 'json' }).notNull().$type<Array<{
-    step: number;
-    title: string;
-    description: string;
-    files: string[];
-  }>>(),
-  dependencies: text('dependencies', { mode: 'json' }).$type<string[]>(),
-  testingStrategy: text('testing_strategy'),
+    .references(() => task.id, { onDelete: "cascade" }),
+  overview: text("overview").notNull(),
+  filesToModify: text("files_to_modify").array().notNull(),
+  implementationPlan: jsonb("implementation_plan").notNull(),
+  dependencies: text("dependencies").array(),
+  testingStrategy: text("testing_strategy"),
   ...timestamps,
 });
 
-export const codeIndex = sqliteTable('code_index', {
-  id: text('id')
+export const codeIndex = pgTable("code_index", {
+  id: text("id")
     .primaryKey()
     .$defaultFn(() => createId()),
-  projectId: text('project_id').notNull(),
-  filePath: text('file_path').notNull(),
-  content: text('content').notNull(),
-  embedding: text('embedding'),
-  language: text('language'),
-  createdAt: integer('created_at', { mode: 'timestamp' })
-    .notNull()
-    .default(sql`(unixepoch())`),
+  projectId: text("project_id").notNull(),
+  filePath: text("file_path").notNull(),
+  content: text("content").notNull(),
+  embedding: text("embedding"),
+  language: text("language"),
+  ...timestamps,
 });
 
 // Relations
